@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:13-alpine
+    container_name: fitness_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fitness_db}
+      POSTGRES_USER: ${DB_USER:-fitness_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fitness_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fitness_user} -d ${DB_NAME:-fitness_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fitness_network
+
+  # Django Application Service
+  django:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: fitness_django
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py createsuperuser --noinput --username admin --email admin@example.com || true &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 fitness_project.wsgi:application"
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-fitness_user}:${DB_PASSWORD:-fitness_pass}@db:5432/${DB_NAME:-fitness_db}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-development-key}
+      DEBUG: ${DEBUG:-False}
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: 1025
+      DJANGO_SETTINGS_MODULE: fitness_project.settings
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fitness_network
+    restart: unless-stopped
+
+  # Nginx Web Server Service
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: fitness_nginx
+    ports:
+      - "${NGINX_PORT:-8080}:8080"
+    volumes:
+      - static_volume:/usr/share/nginx/html/static:ro
+      - media_volume:/usr/share/nginx/html/media:ro
+    depends_on:
+      - django
+    networks:
+      - fitness_network
+    restart: unless-stopped
+
+  # MailHog Email Testing Service
+  mailhog:
+    image: mailhog/mailhog
+    container_name: fitness_mailhog
+    ports:
+      - "${MAILHOG_UI_PORT:-8025}:8025"  # Web UI
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"  # SMTP server
+    networks:
+      - fitness_network
+    restart: unless-stopped
+
+  # Redis Cache Service (Optional)
+  redis:
+    image: redis:6-alpine
+    container_name: fitness_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fitness_network
+    restart: unless-stopped
+
+  # Celery Worker Service (Optional)
+  celery:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: fitness_celery
+    command: celery -A fitness_project worker --loglevel=info
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-fitness_user}:${DB_PASSWORD:-fitness_pass}@db:5432/${DB_NAME:-fitness_db}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-development-key}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: fitness_project.settings
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - fitness_network
+    restart: unless-stopped
+
+  # Celery Beat Service (Optional)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: fitness_celery_beat
+    command: celery -A fitness_project beat --loglevel=info
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-fitness_user}:${DB_PASSWORD:-fitness_pass}@db:5432/${DB_NAME:-fitness_db}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-development-key}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: fitness_project.settings
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - fitness_network
+    restart: unless-stopped
+
+# Named volumes for persistent data
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  redis_data:
+
+# Custom network for all services
+networks:
+  fitness_network:
+    driver: bridge

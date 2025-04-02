@@ -1,0 +1,154 @@
+---
+- name: Deploy Fitness Booking System
+  hosts: production  # Targets the production server group defined in inventory
+  become: yes        # Run tasks with sudo privileges
+  vars:
+    dockerhub_username: "{{ lookup('env', 'DOCKERHUB_USERNAME') }}"
+    image_name: "fitness-booking"
+    django_port: 8000
+    nginx_port: 8080
+    postgres_port: 5432
+    mailhog_ui_port: 8025
+    mailhog_smtp_port: 1025
+    app_directory: "/opt/fitness-booking"  # Base directory for the application
+
+  tasks:
+    # 1. Install system dependencies
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # Refresh cache if older than 1 hour
+
+    - name: Install required system packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - docker.io
+        - docker-compose
+        - python3-pip
+        - git  # Needed if cloning the repository directly
+        - libpq-dev  # PostgreSQL client library
+
+    # 2. Configure Docker environment
+    - name: Ensure Docker group exists
+      group:
+        name: docker
+        state: present
+
+    - name: Add current user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # 3. Set up application directory structure
+    - name: Create application directory
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Create data directories
+      file:
+        path: "{{ app_directory }}/{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - "postgres_data"
+        - "static_files"
+
+    # 4. Copy configuration files
+    - name: Copy docker-compose.prod.yml
+      copy:
+        src: "docker-compose.prod.yml"
+        dest: "{{ app_directory }}/docker-compose.yml"
+        mode: '0644'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Copy environment variables file
+      copy:
+        src: ".env.production"
+        dest: "{{ app_directory }}/.env"
+        mode: '0600'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    # 5. Manage Docker containers
+    - name: Login to Docker Hub
+      docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ lookup('env', 'DOCKERHUB_TOKEN') }}"
+        state: present
+
+    - name: Pull Docker images
+      command: "docker-compose -f {{ app_directory }}/docker-compose.yml pull"
+      args:
+        chdir: "{{ app_directory }}"
+
+    - name: Stop any existing containers
+      command: "docker-compose -f {{ app_directory }}/docker-compose.yml down"
+      args:
+        chdir: "{{ app_directory }}"
+      ignore_errors: yes  # Continue if no containers are running
+
+    - name: Bring up containers
+      command: "docker-compose -f {{ app_directory }}/docker-compose.yml up -d"
+      args:
+        chdir: "{{ app_directory }}"
+
+    # 6. Verify deployment
+    - name: Check Django container status
+      docker_container_info:
+        name: fitness-booking-django
+      register: django_status
+      until: django_status.container.Status == "running"
+      retries: 5
+      delay: 10
+
+    - name: Check Nginx container status
+      docker_container_info:
+        name: fitness-booking-nginx
+      register: nginx_status
+      until: nginx_status.container.Status == "running"
+      retries: 5
+      delay: 10
+
+    # 7. Configure firewall (optional)
+    - name: Allow HTTP traffic
+      ufw:
+        rule: allow
+        port: "{{ nginx_port }}"
+        proto: tcp
+
+    - name: Allow SSH traffic
+      ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Enable firewall
+      ufw:
+        state: enabled
+        policy: deny
+
+    # 8. Health check (optional)
+    - name: Verify application is responding
+      uri:
+        url: "http://localhost:{{ nginx_port }}/"
+        return_content: yes
+      register: webpage
+      until: "'Fitness Class Booking' in webpage.content"
+      retries: 10
+      delay: 10

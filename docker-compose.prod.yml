@@ -1,0 +1,219 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service (Production)
+  db:
+    image: postgres:13-alpine
+    container_name: fitness_db_prod
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/prod/conf:/etc/postgresql
+      - ./docker/postgres/prod/backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+  # Django Application Service (Production)
+  django:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+      args:
+        ENVIRONMENT: production
+    container_name: fitness_django_prod
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 5 --threads 2 --timeout 120 
+             --access-logfile - --error-logfile - --capture-output 
+             --log-level warning fitness_project.wsgi:application"
+    environment:
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: "False"
+      DJANGO_SETTINGS_MODULE: fitness_project.settings.production
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./logs/django:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+  # Nginx Web Server Service (Production)
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile.prod
+    container_name: fitness_nginx_prod
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - static_volume:/usr/share/nginx/html/static:ro
+      - media_volume:/usr/share/nginx/html/media:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - django
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+  # Redis Cache Service (Production)
+  redis:
+    image: redis:6-alpine
+    container_name: fitness_redis_prod
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/conf:/usr/local/etc/redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+  # Celery Worker Service (Production)
+  celery:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: fitness_celery_prod
+    command: celery -A fitness_project worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      SECRET_KEY: ${SECRET_KEY}
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/1
+      DJANGO_SETTINGS_MODULE: fitness_project.settings.production
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./logs/celery:/app/logs
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+  # Celery Beat Service (Production)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: fitness_celery_beat_prod
+    command: celery -A fitness_project beat --loglevel=info --pidfile=/tmp/celerybeat.pid
+    environment:
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      SECRET_KEY: ${SECRET_KEY}
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      DJANGO_SETTINGS_MODULE: fitness_project.settings.production
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./logs/celery:/app/logs
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+  # Certbot for SSL Certificates (Let's Encrypt)
+  certbot:
+    image: certbot/certbot
+    container_name: fitness_certbot_prod
+    volumes:
+      - ./docker/nginx/ssl:/etc/letsencrypt
+      - ./docker/nginx/conf:/etc/nginx/conf.d
+    command: certonly --webroot --webroot-path=/var/www/certbot -d ${DOMAIN_NAME} --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email --force-renewal
+    networks:
+      - fitness_prod_network
+    restart: unless-stopped
+
+# Named volumes for persistent data
+volumes:
+  postgres_data:
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_HOST},rw,nolock,hard,intr,tcp
+      device: ":${NFS_POSTGRES_PATH}"
+  static_volume:
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_HOST},rw,nolock,hard,intr,tcp
+      device: ":${NFS_STATIC_PATH}"
+  media_volume:
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_HOST},rw,nolock,hard,intr,tcp
+      device: ":${NFS_MEDIA_PATH}"
+  redis_data:
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_HOST},rw,nolock,hard,intr,tcp
+      device: ":${NFS_REDIS_PATH}"
+
+# Custom network for all services
+networks:
+  fitness_prod_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
