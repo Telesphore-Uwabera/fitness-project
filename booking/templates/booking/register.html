@@ -1,104 +1,314 @@
-{% extends "base.html" %}
+{% extends 'booking/base.html' %}
 {% load static %}
 
 {% block title %}Register | Fitness Booking{% endblock %}
 
+{% block css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --light: #f8f9fa;
+        --danger: #dc3545;
+        --success: #28a745;
+        --warning: #ffc107;
+    }
+    
+    .registration-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: 2rem 1rem;
+    }
+    
+    .registration-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        width: 100%;
+        max-width: 540px;
+        margin: 0 auto;
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .registration-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+    
+    .registration-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    
+    .registration-header img.logo {
+        height: 70px;
+        margin-bottom: 1.25rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .registration-header img.logo:hover {
+        transform: scale(1.05);
+    }
+    
+    .registration-header h2 {
+        color: var(--secondary);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .registration-header p {
+        color: #6c757d;
+        font-size: 1.1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.75rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        padding: 12px 15px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+    }
+    
+    .error-message {
+        color: var(--danger);
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: block;
+    }
+    
+    .password-strength-container {
+        margin-top: 0.5rem;
+    }
+    
+    .password-strength-meter {
+        height: 6px;
+        background: #e9ecef;
+        margin: 8px 0 12px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .strength-bar {
+        height: 100%;
+        width: 0%;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+    }
+    
+    .password-requirements {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .password-requirements ul {
+        padding-left: 1.25rem;
+        margin-bottom: 0;
+    }
+    
+    .password-requirements li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .btn-register {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border: none;
+        padding: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+    
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+    }
+    
+    .login-link {
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .login-link:hover {
+        color: var(--secondary);
+        text-decoration: underline;
+    }
+    
+    .terms-check {
+        margin-top: 1.5rem;
+    }
+    
+    .terms-links {
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    
+    .terms-links:hover {
+        color: var(--secondary);
+        text-decoration: underline;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .registration-card {
+            padding: 2rem 1.5rem;
+        }
+        
+        .registration-header img.logo {
+            height: 60px;
+        }
+        
+        .registration-header h2 {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="registration-container">
-    <div class="registration-card">
-        <div class="registration-header">
-            <img src="{% static 'images/logo.png' %}" alt="Fitness Booking Logo" class="logo">
-            <h2>Create Your Account</h2>
-            <p>Join our fitness community today</p>
-        </div>
-
-        <form method="post" class="registration-form" novalidate>
-            {% csrf_token %}
-            
-            <!-- Username Field -->
-            <div class="form-group">
-                <label for="{{ form.username.id_for_label }}">Username</label>
-                {{ form.username }}
-                {% if form.username.errors %}
-                    <div class="error-message">
-                        {{ form.username.errors|join:", " }}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="registration-card">
+                    <div class="registration-header">
+                        <img src="{% static 'images/logo.png' %}" alt="Fitness Booking Logo" class="logo">
+                        <h2>Create Your Account</h2>
+                        <p>Join thousands of members achieving their fitness goals</p>
                     </div>
-                {% endif %}
-                <small class="form-text">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small>
-            </div>
 
-            <!-- Email Field -->
-            <div class="form-group">
-                <label for="{{ form.email.id_for_label }}">Email</label>
-                {{ form.email }}
-                {% if form.email.errors %}
-                    <div class="error-message">
-                        {{ form.email.errors|join:", " }}
-                    </div>
-                {% endif %}
-            </div>
+                    <form method="post" class="registration-form" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Username Field -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                                    {{ form.username }}
+                                    {% if form.username.errors %}
+                                        <span class="error-message">
+                                            {{ form.username.errors|join:", " }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Email Field -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <span class="error-message">
+                                            {{ form.email.errors|join:", " }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
 
-            <!-- Password Fields -->
-            <div class="form-group">
-                <label for="{{ form.password1.id_for_label }}">Password</label>
-                {{ form.password1 }}
-                <div class="password-strength-meter">
-                    <div class="strength-bar"></div>
-                </div>
-                <small class="form-text">
-                    <ul>
-                        <li>Your password must contain at least 8 characters</li>
-                        <li>Cannot be entirely numeric</li>
-                    </ul>
-                </small>
-            </div>
+                        <div class="row">
+                            <!-- Password Field -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label">Password</label>
+                                    {{ form.password1 }}
+                                    <div class="password-strength-container">
+                                        <div class="password-strength-meter">
+                                            <div class="strength-bar"></div>
+                                        </div>
+                                        <div class="password-requirements">
+                                            <ul>
+                                                <li>At least 8 characters</li>
+                                                <li>Contains uppercase letter</li>
+                                                <li>Contains number</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Password Confirmation -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password</label>
+                                    {{ form.password2 }}
+                                    {% if form.password2.errors %}
+                                        <span class="error-message">
+                                            {{ form.password2.errors|join:", " }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
 
-            <div class="form-group">
-                <label for="{{ form.password2.id_for_label }}">Password Confirmation</label>
-                {{ form.password2 }}
-                {% if form.password2.errors %}
-                    <div class="error-message">
-                        {{ form.password2.errors|join:", " }}
-                    </div>
-                {% endif %}
-            </div>
+                        <div class="row">
+                            <!-- Phone Number -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
+                                    {{ form.phone_number }}
+                                </div>
+                            </div>
+                            
+                            <!-- Birth Date -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">Birth Date</label>
+                                    <input type="date" name="{{ form.birth_date.name }}" 
+                                           id="{{ form.birth_date.id_for_label }}" 
+                                           class="form-control">
+                                </div>
+                            </div>
+                        </div>
 
-            <!-- Profile Fields -->
-            <div class="form-group">
-                <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
-                {{ form.phone_number }}
-            </div>
+                        <!-- Terms Agreement -->
+                        <div class="form-check terms-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="{% url 'booking:terms' %}" class="terms-links">Terms of Service</a> and 
+                                <a href="{% url 'booking:privacy' %}" class="terms-links">Privacy Policy</a>
+                            </label>
+                        </div>
 
-            <div class="form-group">
-                <label for="{{ form.birth_date.id_for_label }}">Birth Date</label>
-                {{ form.birth_date }}
-                <small class="form-text">Used for age-appropriate class recommendations</small>
-            </div>
-
-            <!-- Terms Agreement -->
-            <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="terms" required>
-                <label class="form-check-label" for="terms">
-                    I agree to the <a href="{% url 'terms' %}">Terms of Service</a> and 
-                    <a href="{% url 'privacy' %}">Privacy Policy</a>
-                </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block">Register</button>
-        </form>
-
-        <div class="registration-footer">
-            <p>Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
-            
-            <div class="social-login">
-                <p>Or register with:</p>
-                <div class="social-buttons">
-                    <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-google">
-                        <i class="fab fa-google"></i> Google
-                    </a>
-                    <a href="{% url 'social:begin' 'facebook' %}" class="btn btn-facebook">
-                        <i class="fab fa-facebook-f"></i> Facebook
-                    </a>
+                        <button type="submit" class="btn btn-primary btn-register w-100 py-3 mt-3 mb-4">
+                            <i class="fas fa-user-plus me-2"></i> Create Account
+                        </button>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">Already have an account? <a href="{% url 'booking:login' %}" class="login-link">Sign in here</a></p>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -106,51 +316,8 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    .registration-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        padding: 2rem;
-    }
-    
-    .registration-card {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        width: 100%;
-        max-width: 500px;
-        padding: 2.5rem;
-    }
-    
-    .registration-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .registration-header .logo {
-        height: 60px;
-        margin-bottom: 1rem;
-    }
-    
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .error-message {
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
-    
-    /* Add more custom styles as needed */
-</style>
-{% endblock %}
-
-{% block extra_js %}
+{% block js %}
+{{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Password strength indicator
@@ -166,15 +333,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function calculatePasswordStrength(password) {
-        // Implement your strength calculation logic
-        return Math.min(100, password.length * 10);
+        let strength = 0;
+        if (password.length > 7) strength += 30;
+        if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength += 20;
+        if (password.match(/\d/)) strength += 20;
+        if (password.match(/[^a-zA-Z0-9]/)) strength += 30;
+        return Math.min(100, strength);
     }
     
     function getStrengthColor(strength) {
-        if (strength < 30) return '#dc3545';
+        if (strength < 40) return '#dc3545';
         if (strength < 70) return '#ffc107';
         return '#28a745';
     }
+
+    // Add focus styles to form inputs
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentNode.querySelector('.form-label').style.color = '#4361ee';
+        });
+        input.addEventListener('blur', function() {
+            this.parentNode.querySelector('.form-label').style.color = '#495057';
+        });
+    });
 });
 </script>
 {% endblock %}

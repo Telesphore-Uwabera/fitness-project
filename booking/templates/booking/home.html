@@ -1,18 +1,262 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Fitness Booking</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Classes | Fitness Booking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome@6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-auth-links .btn {
+            margin-left: 10px;
+            padding: 6px 15px;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .class-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .class-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .class-img {
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .search-container {
+            max-width: 500px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Fitness Booking</h1>
-    {% if classes %}
-        <ul>
-        {% for class in classes %}
-            <li>{{ class.name }} - {{ class.instructor }}</li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No classes available.</p>
-    {% endif %}
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'booking:home' %}">
+                <i class="fas fa-dumbbell me-2"></i>Fitness Booking
+            </a>
+            <div class="d-flex align-items-center nav-auth-links">
+                <a href="{% url 'booking:login' %}" class="btn btn-outline-primary">Login</a>
+                <a href="{% url 'booking:register' %}" class="btn btn-primary">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">Transform Your Fitness Journey</h1>
+            <p class="lead mb-4">Book with top instructors and achieve your goals</p>
+            
+            <div class="d-flex justify-content-center gap-3 mb-4">
+                <a href="{% url 'booking:register' %}" class="btn btn-light btn-lg px-4">
+                    <i class="fas fa-user-plus me-2"></i>Join Now
+                </a>
+                <a href="{% url 'booking:login' %}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="fas fa-sign-in-alt me-2"></i>Member Login
+                </a>
+            </div>
+            
+            <div class="search-container mx-auto">
+                <form method="GET" action="#">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search classes..." name="q">
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Class Listings Section -->
+    <div class="container mb-5">
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold">Upcoming Classes</h2>
+                <p class="text-muted">
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'booking:register' %}" class="text-primary">Sign up</a> to book your first class!
+                    {% else %}
+                    Book your next fitness session
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if classes %}
+        <div class="row">
+            {% for class in classes %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card class-card h-100">
+                    <!-- Class image -->
+                    {% if class.image %}
+                    <img src="{{ class.image.url }}" class="card-img-top class-img" alt="{{ class.name }}">
+                    {% else %}
+                    <img src="https://via.placeholder.com/400x180?text=Fitness+Class" class="card-img-top class-img" alt="Class placeholder">
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <!-- Class type badge -->
+                        <span class="badge bg-success mb-2">{{ class.get_class_type_display }}</span>
+                        
+                        <!-- Class name and instructor -->
+                        <h5 class="card-title">{{ class.name }}</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-user-tie me-1"></i> {{ class.instructor }}
+                        </p>
+                        
+                        <!-- Class schedule -->
+                        <div class="d-flex justify-content-between text-muted small mb-3">
+                            <span><i class="fas fa-calendar-day me-1"></i> {{ class.start_time|date:"M d, Y" }}</span>
+                            <span><i class="fas fa-clock me-1"></i> {{ class.start_time|time }}-{{ class.end_time|time }}</span>
+                        </div>
+                        
+                        <!-- Price and booking button -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-primary">${{ class.price }}</h5>
+                            {% if user.is_authenticated %}
+                            <a href="{% url 'booking:class_detail' class.pk %}" class="btn btn-primary btn-sm">
+                                Book Now <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                            {% else %}
+                            <a href="{% url 'booking:register' %}" class="btn btn-outline-primary btn-sm">
+                                Sign Up to Book
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-calendar-times fa-4x mb-3 text-muted"></i>
+            <h3 class="mb-2">No Classes Available</h3>
+            <p class="text-muted mb-4">New classes coming soon</p>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'booking:register' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-1"></i> Register for Updates
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Call-to-Action Section -->
+    <section class="py-5 bg-light">
+        <div class="container text-center">
+            <h2 class="mb-4">Ready to Start Your Fitness Journey?</h2>
+            <a href="{% url 'booking:register' %}" class="btn btn-primary btn-lg px-4">
+                <i class="fas fa-user-plus me-2"></i>Sign Up Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5>Fitness Booking</h5>
+                    <p>Book fitness classes with top instructors in your area.</p>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'booking:register' %}" class="text-white">Sign Up</a></li>
+                        <li><a href="{% url 'booking:login' %}" class="text-white">Login</a></li>
+                        <li><a href="{% url 'booking:home' %}" class="text-white">Classes</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Connect With Us</h5>
+                    <div class="social-links d-flex gap-3">
+                        <!-- Facebook -->
+                        <a href="#" 
+                           class="social-icon text-white rounded-circle d-flex align-items-center justify-content-center"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           aria-label="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        
+                        <!-- Instagram -->
+                        <a href="#" 
+                           class="social-icon text-white rounded-circle d-flex align-items-center justify-content-center"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           aria-label="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        
+                        <!-- Twitter -->
+                        <a href="#" 
+                           class="social-icon text-white rounded-circle d-flex align-items-center justify-content-center"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           aria-label="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
+                    
+                    <style>
+                        .social-icon {
+                            width: 40px;
+                            height: 40px;
+                            background: rgba(255, 255, 255, 0.1);
+                            transition: all 0.3s ease;
+                        }
+                        
+                        .social-icon:hover {
+                            background: rgba(255, 255, 255, 0.2);
+                            transform: translateY(-3px);
+                        }
+                        
+                        .social-icon i {
+                            font-size: 1.1rem;
+                        }
+                    </style>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

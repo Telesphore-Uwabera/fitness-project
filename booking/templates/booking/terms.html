@@ -1,0 +1,36 @@
+{% extends 'booking/base.html' %}
+{% load static %}
+
+{% block title %}Terms of Service | Fitness Booking{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h1 class="mb-4">Terms of Service</h1>
+                    
+                    <h4>1. Membership</h4>
+                    <p>By registering for an account, you agree to comply with all facility rules...</p>
+                    
+                    <h4 class="mt-4">2. Booking Policy</h4>
+                    <p>Classes must be booked at least 24 hours in advance...</p>
+                    
+                    <h4 class="mt-4">3. Cancellations</h4>
+                    <p>Cancellations must be made at least 12 hours before the scheduled class...</p>
+                    
+                    <h4 class="mt-4">4. Liability</h4>
+                    <p>Participants engage in physical activity at their own risk...</p>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'booking:register' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Registration
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -381,3 +381,13 @@ def quick_cancel_booking(request, booking_id):
 # Helper functions
 def is_instructor(user):
     return user.is_staff
+
+def account_inactive(request):
+    # Your view logic here
+    return render(request, 'booking/account_inactive.html')
+
+def terms(request):
+    return render(request, 'booking/terms.html')
+
+def privacy(request):
+    return render(request, 'booking/privacy.html')
