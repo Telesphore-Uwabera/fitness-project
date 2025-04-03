@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fitness Booking</title>
+</head>
+<body>
+    <h1>Welcome to Fitness Booking</h1>
+    {% if classes %}
+        <ul>
+        {% for class in classes %}
+            <li>{{ class.name }} - {{ class.instructor }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No classes available.</p>
+    {% endif %}
+</body>
+</html>

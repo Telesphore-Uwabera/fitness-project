@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Register | Fitness Booking{% endblock %}
+
+{% block content %}
+<div class="registration-container">
+    <div class="registration-card">
+        <div class="registration-header">
+            <img src="{% static 'images/logo.png' %}" alt="Fitness Booking Logo" class="logo">
+            <h2>Create Your Account</h2>
+            <p>Join our fitness community today</p>
+        </div>
+
+        <form method="post" class="registration-form" novalidate>
+            {% csrf_token %}
+            
+            <!-- Username Field -->
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="error-message">
+                        {{ form.username.errors|join:", " }}
+                    </div>
+                {% endif %}
+                <small class="form-text">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small>
+            </div>
+
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="error-message">
+                        {{ form.email.errors|join:", " }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Password Fields -->
+            <div class="form-group">
+                <label for="{{ form.password1.id_for_label }}">Password</label>
+                {{ form.password1 }}
+                <div class="password-strength-meter">
+                    <div class="strength-bar"></div>
+                </div>
+                <small class="form-text">
+                    <ul>
+                        <li>Your password must contain at least 8 characters</li>
+                        <li>Cannot be entirely numeric</li>
+                    </ul>
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.password2.id_for_label }}">Password Confirmation</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <div class="error-message">
+                        {{ form.password2.errors|join:", " }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Profile Fields -->
+            <div class="form-group">
+                <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+                {{ form.phone_number }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.birth_date.id_for_label }}">Birth Date</label>
+                {{ form.birth_date }}
+                <small class="form-text">Used for age-appropriate class recommendations</small>
+            </div>
+
+            <!-- Terms Agreement -->
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="terms" required>
+                <label class="form-check-label" for="terms">
+                    I agree to the <a href="{% url 'terms' %}">Terms of Service</a> and 
+                    <a href="{% url 'privacy' %}">Privacy Policy</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+
+        <div class="registration-footer">
+            <p>Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
+            
+            <div class="social-login">
+                <p>Or register with:</p>
+                <div class="social-buttons">
+                    <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-google">
+                        <i class="fab fa-google"></i> Google
+                    </a>
+                    <a href="{% url 'social:begin' 'facebook' %}" class="btn btn-facebook">
+                        <i class="fab fa-facebook-f"></i> Facebook
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .registration-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 2rem;
+    }
+    
+    .registration-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 500px;
+        padding: 2.5rem;
+    }
+    
+    .registration-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .registration-header .logo {
+        height: 60px;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    /* Add more custom styles as needed */
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password strength indicator
+    const password1 = document.querySelector('#{{ form.password1.id_for_label }}');
+    const strengthBar = document.querySelector('.strength-bar');
+    
+    if (password1 && strengthBar) {
+        password1.addEventListener('input', function() {
+            const strength = calculatePasswordStrength(this.value);
+            strengthBar.style.width = strength + '%';
+            strengthBar.style.backgroundColor = getStrengthColor(strength);
+        });
+    }
+    
+    function calculatePasswordStrength(password) {
+        // Implement your strength calculation logic
+        return Math.min(100, password.length * 10);
+    }
+    
+    function getStrengthColor(strength) {
+        if (strength < 30) return '#dc3545';
+        if (strength < 70) return '#ffc107';
+        return '#28a745';
+    }
+});
+</script>
+{% endblock %}

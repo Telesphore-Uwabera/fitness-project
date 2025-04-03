@@ -5,16 +5,13 @@ import sys
 import dotenv
 from pathlib import Path
 
-
 def main():
     """Run administrative tasks."""
-    
-    # Load environment variables from .env file
+    # Load environment variables
     dotenv.load_dotenv(
-        os.path.join(Path(__file__).resolve().parent.parent, '.env'
+        os.path.join(Path(__file__).resolve().parent.parent, '.env')
     )
     
-    # Set the default Django settings module
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fitness_project.settings')
     
     try:
@@ -25,17 +22,7 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    
-    # Add custom commands
-    try:
-        from django.core.management.commands.runserver import Command as runserver
-        runserver.default_port = os.getenv('DJANGO_DEFAULT_PORT', '8000')
-        runserver.default_addr = os.getenv('DJANGO_DEFAULT_HOST', '0.0.0.0')
-    except ImportError:
-        pass
-    
     execute_from_command_line(sys.argv)
-
 
 if __name__ == '__main__':
     main()

@@ -18,7 +18,6 @@ django-widget-tweaks==1.5.0  # For form field customization
 
 # Email
 django-anymail==10.1  # For production email (SendGrid, Mailgun, etc.)
-mailhog==1.0.1  # For local email testing
 
 # Security
 django-axes==6.0.0  # For login security

@@ -1,3 +1,4 @@
+import booking.signals
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
 
@@ -29,40 +30,53 @@ class BookingConfig(AppConfig):
         Override this method to perform initialization tasks when Django starts.
         Called as soon as the registry is fully populated.
         """
-        # Import signal handlers to ensure they're registered
-        from . import signals  # noqa
+        # Import signal handlers
+        self._register_signals()
         
-        # Initialize any periodic tasks (e.g., for sending reminders)
+        # Initialize background tasks
         self._initialize_scheduled_tasks()
         
-        # Register custom admin checks
+        # Register custom checks
         self._register_checks()
+    
+    def _register_signals(self):
+        """Register all signal handlers for the application."""
+        # Import signals module to connect handlers
+        from . import signals  # noqa
     
     def _initialize_scheduled_tasks(self):
         """
         Initialize any background tasks needed for the application.
+        Uses django-background-tasks if available.
         """
         try:
             from background_task.models import Task
             from .tasks import send_reminders
             
-            # Check if reminders task already exists
             if not Task.objects.filter(task_name='booking.tasks.send_reminders').exists():
-                send_reminders(repeat=Task.DAILY)
+                send_reminders(repeat=Task.DAILY, verbose_name="Daily booking reminders")
         except ImportError:
-            # Background tasks not configured, skip initialization
+            # Background tasks not configured
             pass
         except Exception as e:
-            # Log error but don't prevent app startup
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Failed to initialize scheduled tasks: {e}")
     
     def _register_checks(self):
-        """
-        Register custom system checks for this application.
-        """
+        """Register custom system checks for this application."""
         from django.core.checks import register
-        from .checks import check_configuration
+        from .checks import (
+            check_configuration,
+            check_email_settings,
+            check_booking_policies
+        )
         
         register(check_configuration)
+        register(check_email_settings)
+        register(check_booking_policies)
+
+    def __init__(self, app_name, app_module):
+        """Initialize the application configuration."""
+        super().__init__(app_name, app_module)
+        # Any additional initialization can go here
