@@ -1,0 +1,24 @@
+{% extends "booking/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger">
+        <h2>Access Forbidden (403)</h2>
+        <p>CSRF Verification Failed: {{ reason }}</p>
+        
+        {% if codespace_name %}
+        <div class="mt-3">
+            <p>You're using GitHub Codespaces. Please ensure:</p>
+            <ul>
+                <li>You're accessing <code>https://{{ codespace_name }}.githubpreview.dev</code></li>
+                <li>Cookies are enabled in your browser</li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        <a href="{% url 'login' %}?next={{ admin_url }}" class="btn btn-primary">
+            Return to Login
+        </a>
+    </div>
+</div>
+{% endblock %}

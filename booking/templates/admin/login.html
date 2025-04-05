@@ -1,0 +1,31 @@
+{% extends "admin  /login.html" %}
+
+{% block content %}
+<div id="content-main">
+    <form action="{{ app_path }}" method="post" id="login-form">
+        {% csrf_token %}
+        <div class="form-row">
+            {{ form.username  .errors }}
+            {{ form.username  .label_tag }} {{ form.username  }}
+        </div>
+        <div class="form-row">
+            {{ form.password  .errors }}
+            {{ form.password  .label_tag }} {{ form.password  }}
+            <input type="hidden" name="next" value="{{ next }}">
+        </div>
+        <div class="submit-row">
+            <input type="submit" value="Log in">
+        </div>
+    </form>
+</div>
+
+<script>
+// Ensure CSRF token is properly handled
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('login-form');
+    if (window.location.origin  !  ==  '{{ request.META.HTTP_ORIGIN  }}') {
+        console.warn('Origin mismatch detected');
+    }
+});
+</script>
+{% endblock %}

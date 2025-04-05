@@ -3,6 +3,7 @@ from django.contrib import admin
 from . import views
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import AuthenticationForm
+from booking.views import custom_admin_logout
 
 app_name = 'booking'
 
@@ -10,7 +11,8 @@ urlpatterns = [
     # Public views
     path('', views.home, name='home'),
     path('classes/<int:pk>/', views.class_detail, name='class_detail'),
-    
+    path('admin  /logout/', custom_admin_logout, name='admin  -logout'),
+    path('', views.home, name='home'), 
     # Enhanced authentication views
     path('register/', views.register, name='register'),
     path('login/', 
@@ -23,6 +25,7 @@ urlpatterns = [
              }
          ), 
          name='login'),
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', 
          auth_views.LogoutView.as_view(
              template_name='booking/logged_out.html',

@@ -1,0 +1,21 @@
+{% extends "admin  /logout.html" %}
+
+{% block content %}
+<form id="logout-form" method="post" action="{% url 'admin  :logout' %}">
+    {% csrf_token %}
+    <p>You are about to be logged out. Click confirm to proceed.</p>
+    <input type="submit" value="Confirm Logout">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Automatically submit the form if CSRF is valid
+    const form = document.getElementById('logout-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Optional: Add AJAX logout handling here
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -10,6 +10,15 @@ from django.db.models import Count, Q
 from datetime import timedelta
 from .models import FitnessClass, Booking, Profile
 from .forms import FitnessClassForm, ProfileForm, CustomUserCreationForm
+from django.shortcuts import render
+from django.views.decorators.csrf import requires_csrf_token
+from django.contrib.auth import logout
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+import os
+from django.conf import settings
+from django.contrib.auth import login
+from django.shortcuts import render, redirect
 
 def home(request):
     """Display all upcoming fitness classes with filtering options"""
@@ -96,12 +105,19 @@ def register(request):
                 birth_date=form.cleaned_data.get('birth_date')
             )
             
+            # Fix authentication backend
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
+            
             messages.success(request, 'Registration successful!')
-            return redirect('home')
+            return redirect('home')  # Ensure this matches your URL pattern
     else:
         form = CustomUserCreationForm()
     return render(request, 'booking/register.html', {'form': form})
+
+def home(request):
+    """Simple home page view"""
+    return render(request, 'booking/home.html')
 
 @login_required
 def book_class(request, class_id):
@@ -391,3 +407,19 @@ def terms(request):
 
 def privacy(request):
     return render(request, 'booking/privacy.html')
+@requires_csrf_token
+def csrf_failure(request, reason=""):
+    ctx = {
+        'reason': reason,
+        'codespace_name': os.getenv('CODESPACE_NAME'),
+        'admin_url': settings.ADMIN_URL
+    }
+    return render(request, '403_csrf.html', status=403)
+
+@never_cache
+@csrf_protect
+def custom_admin_logout(request):
+    logout(request)
+    return redirect('admin  :login')
+def home(request):
+    return render(request, 'booking/home.html')
